@@ -140,31 +140,53 @@ function install_zephyr() {
 
 # Function to install NRF Connect SDK
 function install_nrf() {
-    echo "Installing NRF Connect SDK..."
+    _oh_my_sdk_print_status "info" "Starting NRF Connect SDK installation..."
     
     # Install system dependencies first
+    _oh_my_sdk_print_status "info" "Checking system dependencies..."
     _oh_my_sdk_install_system_deps
     
     local nrf_dir="${OH_MY_SDK_DIST}/nrf"
     
     if [[ ! -d "${nrf_dir}" ]]; then
+        _oh_my_sdk_print_status "info" "Creating NRF Connect workspace..."
         mkdir -p "${nrf_dir}"
         cd "${nrf_dir}"
         
         # Create and activate virtual environment
+        _oh_my_sdk_print_status "info" "Setting up Python virtual environment..."
         _oh_my_sdk_create_venv "nrf"
         _oh_my_sdk_activate_venv "nrf"
         
-        # Install nrfutil
-        pip install nrfutil
+        # Install nrfutil and its dependencies in the virtual environment
+        _oh_my_sdk_print_status "info" "Installing nrfutil and its dependencies..."
+        pip install --upgrade pip
+        pip install nrfutil==6.1.7  # Using latest stable version
+        
+        # Install essential nrfutil commands
+        _oh_my_sdk_print_status "info" "Installing nrfutil device command..."
+        nrfutil install device
+        
+        _oh_my_sdk_print_status "info" "Installing nrfutil nrf5sdk-tools..."
+        nrfutil install nrf5sdk-tools
+        
+        _oh_my_sdk_print_status "info" "Installing nrfutil completion..."
+        nrfutil install completion
+        nrfutil completion install zsh
         
         # Download and install NRF Connect SDK
+        _oh_my_sdk_print_status "info" "Downloading and installing NRF Connect SDK..."
         nrfutil install ncs
         
         deactivate
-        echo "NRF Connect SDK installation complete!"
+        _oh_my_sdk_print_status "success" "NRF Connect SDK installation complete!"
+        echo
+        _oh_my_sdk_print_status "info" "Next steps:"
+        echo "  1. Run 'activate_nrf' to activate the environment"
+        echo "  2. Run 'create_nrf_project <name>' to create a new project"
+        echo "  3. Run 'nrf_help' for more information"
     else
-        echo "NRF Connect SDK is already installed."
+        _oh_my_sdk_print_status "warning" "NRF Connect SDK is already installed."
     fi
 }
 
@@ -185,14 +207,41 @@ function activate_zephyr() {
 # Function to activate NRF Connect environment
 function activate_nrf() {
     if ! _oh_my_sdk_nrf_installed; then
-        echo "NRF Connect SDK is not installed. Please run 'install_nrf' first."
+        _oh_my_sdk_print_status "error" "NRF Connect SDK is not installed. Please run 'install_nrf' first."
         return 1
     fi
     
     local nrf_dir="${OH_MY_SDK_DIST}/nrf"
     cd "${nrf_dir}"
+    
+    # Activate Python virtual environment
+    _oh_my_sdk_print_status "info" "Activating Python virtual environment..."
     _oh_my_sdk_activate_venv "nrf"
-    echo "NRF Connect environment activated"
+    
+    # Set up NRF environment variables
+    _oh_my_sdk_print_status "info" "Setting up NRF Connect environment variables..."
+    export NRF_CLI_DIR="${OH_MY_SDK_BASE}/nordic-cli/nrf-command-line-tools"
+    export JLINK_DIR="${OH_MY_SDK_BASE}/nordic-cli/JLink_Linux_V794e_x86_64"
+    export PATH="${NRF_CLI_DIR}/bin:${JLINK_DIR}:${PATH}"
+    export BUILD_DIR="build"
+    
+    # Export Zephyr CMake package (NRF uses Zephyr)
+    _oh_my_sdk_print_status "info" "Exporting Zephyr CMake package..."
+    west zephyr-export
+    
+    _oh_my_sdk_print_status "success" "NRF Connect environment activated!"
+    echo
+    _oh_my_sdk_print_status "info" "Available commands:"
+    echo "  • west build -b <board>     Build project for specific board"
+    echo "  • west flash                Flash project to board"
+    echo "  • west debug                Start debug session"
+    echo "  • nrfutil device list       List connected devices"
+    echo "  • nrfutil device recover    Recover a device"
+    echo "  • nrfutil device erase      Erase device memory"
+    echo "  • nrfutil dfu genpkg        Generate DFU package"
+    echo "  • nrfutil dfu serial        Perform DFU over serial"
+    echo "  • nrfutil dfu usb-serial    Perform DFU over USB"
+    echo "  • deactivate_sdk            Deactivate environment"
 }
 
 # Function to deactivate current environment
