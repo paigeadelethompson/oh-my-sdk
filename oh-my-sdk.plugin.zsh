@@ -666,87 +666,49 @@ function zap_oh_my_sdk() {
 # Main omsdk command function
 function omsdk() {
     case "$1" in
-        "help")
-            case "$2" in
-                "nrf")
-                    nrf_help
-                    ;;
-                *)
-                    echo "oh-my-sdk - SDK Management Tool"
-                    echo
-                    echo "Available commands:"
-                    echo "  omsdk help                    - Show this help message"
-                    echo "  omsdk help nrf               - Show NRF Connect SDK help"
-                    echo "  omsdk install nrf            - Install NRF Connect SDK"
-                    echo "  omsdk activate nrf           - Activate NRF environment"
-                    echo "  omsdk deactivate             - Deactivate current environment"
-                    echo "  omsdk create nrf <name>      - Create a new NRF project"
-                    echo "  omsdk list nrf boards        - List available NRF boards"
-                    echo "  omsdk status                 - Show current environment status"
-                    echo "  omsdk list                   - List installed SDKs"
-                    echo "  omsdk zap                    - Remove all SDK installations"
-                    ;;
-            esac
-            ;;
-        "install")
-            case "$2" in
-                "nrf")
-                    install_nrf
-                    ;;
-                *)
-                    echo "Usage: omsdk install [nrf]"
-                    return 1
-                    ;;
-            esac
-            ;;
-        "activate")
-            case "$2" in
-                "nrf")
-                    activate_nrf
-                    ;;
-                *)
-                    echo "Usage: omsdk activate [nrf]"
-                    return 1
-                    ;;
-            esac
-            ;;
-        "create")
-            case "$2" in
-                "nrf")
-                    create_nrf_project "$3"
-                    ;;
-                *)
-                    echo "Usage: omsdk create [nrf] <project_name>"
-                    return 1
-                    ;;
-            esac
-            ;;
-        "list")
-            case "$2" in
-                "nrf")
-                    case "$3" in
-                        "boards")
-                            _oh_my_sdk_list_nrf_boards
-                            ;;
-                        *)
-                            echo "Usage: omsdk list nrf [boards]"
-                            return 1
-                            ;;
-                    esac
-                    ;;
-                *)
-                    echo "Usage: omsdk list [nrf]"
-                    return 1
-                    ;;
-            esac
-            ;;
-        "deactivate")
-            deactivate_sdk
-            ;;
-        *)
-            echo "Usage: omsdk [help|install|activate|create|list|deactivate|status|zap]"
-            return 1
-            ;;
+        ("help") case "$2" in
+                ("nrf") nrf_help ;;
+                (*) echo "oh-my-sdk - SDK Management Tool"
+                        echo
+                        echo "Available commands:"
+                        echo "  omsdk help                    - Show this help message"
+                        echo "  omsdk help nrf               - Show NRF Connect SDK help"
+                        echo "  omsdk install nrf            - Install NRF Connect SDK"
+                        echo "  omsdk activate nrf           - Activate NRF environment"
+                        echo "  omsdk deactivate             - Deactivate current environment"
+                        echo "  omsdk create nrf <name>      - Create a new NRF project"
+                        echo "  omsdk list nrf boards        - List available NRF boards"
+                        echo "  omsdk status                 - Show current environment status"
+                        echo "  omsdk list                   - List installed SDKs"
+                        echo "  omsdk zap                    - Remove all SDK installations" ;;
+                esac ;;
+        ("install") case "$2" in
+                ("nrf") install_nrf ;;
+                (*) echo "Usage: omsdk install [nrf]"
+                        return 1 ;;
+                esac ;;
+        ("activate") case "$2" in
+                ("nrf") activate_nrf ;;
+                (*) echo "Usage: omsdk activate [nrf]"
+                        return 1 ;;
+                esac ;;
+        ("create") case "$2" in
+                ("nrf") create_nrf_project "$3" ;;
+                (*) echo "Usage: omsdk create [nrf] <project_name>"
+                        return 1 ;;
+                esac ;;
+        ("list") case "$2" in
+                ("nrf") case "$3" in
+                        ("boards") _oh_my_sdk_list_nrf_boards ;;
+                        (*) echo "Usage: omsdk list nrf [boards]"
+                                return 1 ;;
+                        esac ;;
+                (*) echo "Usage: omsdk list [nrf]"
+                        return 1 ;;
+                esac ;;
+        ("deactivate") deactivate_sdk ;;
+        (*) echo "Usage: omsdk [help|install|activate|create|list|deactivate|status|zap]"
+                return 1 ;;
     esac
 }
 
