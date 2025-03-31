@@ -4,29 +4,17 @@
 # Author: Your Name
 # License: MIT
 
-echo "Starting oh-my-sdk plugin initialization..."
-
 # Base directory for SDK installations
-export OH_MY_SDK_BASE="${HOME}/.oh-my-sdk"
-export OH_MY_SDK_DIST="${OH_MY_SDK_BASE}/dist"
-export OH_MY_SDK_PYENV="${OH_MY_SDK_BASE}/pyenv"
-export OH_MY_SDK_LOCAL="${HOME}/.local"
-
-echo "Setting up directories..."
-
-# Create necessary directories if they don't exist
-mkdir -p "${OH_MY_SDK_BASE}"
-mkdir -p "${OH_MY_SDK_DIST}"
-mkdir -p "${OH_MY_SDK_PYENV}"
-mkdir -p "${OH_MY_SDK_LOCAL}"
-
-echo "Directories created"
+local OH_MY_SDK_BASE="${HOME}/.oh-my-sdk"
+local OH_MY_SDK_DIST="${OH_MY_SDK_BASE}/dist"
+local OH_MY_SDK_PYENV="${OH_MY_SDK_BASE}/pyenv"
+local OH_MY_SDK_LOCAL="${HOME}/.local"
 
 # Hook directories
-export OH_MY_SDK_HOOKS="${OH_MY_SDK_BASE}/hooks"
-export OH_MY_SDK_HOOKS_INSTALL="${OH_MY_SDK_HOOKS}/install"
-export OH_MY_SDK_HOOKS_ACTIVATE="${OH_MY_SDK_HOOKS}/activate"
-export OH_MY_SDK_HOOKS_DEACTIVATE="${OH_MY_SDK_HOOKS}/deactivate"
+local OH_MY_SDK_HOOKS="${OH_MY_SDK_BASE}/hooks"
+local OH_MY_SDK_HOOKS_INSTALL="${OH_MY_SDK_HOOKS}/install"
+local OH_MY_SDK_HOOKS_ACTIVATE="${OH_MY_SDK_HOOKS}/activate"
+local OH_MY_SDK_HOOKS_DEACTIVATE="${OH_MY_SDK_HOOKS}/deactivate"
 
 # Create necessary directories if they don't exist
 [[ ! -d "${OH_MY_SDK_BASE}" ]] && mkdir -p "${OH_MY_SDK_BASE}"
@@ -63,8 +51,6 @@ function _oh_my_sdk_print_status() {
             ;;
     esac
 }
-
-echo "Helper functions defined"
 
 # Helper function to check if a command exists
 function _oh_my_sdk_command_exists() {
@@ -218,6 +204,24 @@ function install_nrf() {
         # Export Zephyr CMake package
         west zephyr-export
         
+        # Install Nordic Command Line Tools
+        _oh_my_sdk_print_status "info" "Installing Nordic Command Line Tools..."
+        local nrf_cli_url="https://nsscprodmedia.blob.core.windows.net/prod/software-and-other-downloads/desktop-software/nrf-command-line-tools/sw/versions-10-x-x/10-24-2/nrf-command-line-tools-10.24.2_linux-amd64.tar.gz"
+        local nrf_cli_tar="${OH_MY_SDK_LOCAL}/nrf-command-line-tools.tar.gz"
+        
+        # Download the tools
+        wget -O "${nrf_cli_tar}" "${nrf_cli_url}"
+        
+        # Extract to ~/.local
+        tar -xzf "${nrf_cli_tar}" -C "${OH_MY_SDK_LOCAL}"
+        
+        # Clean up the tar file
+        rm "${nrf_cli_tar}"
+        
+        # Add Nordic tools to PATH
+        typeset -U PATH
+        PATH="${OH_MY_SDK_LOCAL}/nrf-command-line-tools/bin:$PATH"
+        
         deactivate
         _oh_my_sdk_print_status "success" "NRF Connect SDK installation complete!"
         echo
@@ -258,32 +262,19 @@ function activate_nrf() {
     _oh_my_sdk_print_status "info" "Activating Python virtual environment..."
     _oh_my_sdk_activate_venv "nrf"
     
-    # Set up NRF environment variables
-    _oh_my_sdk_print_status "info" "Setting up NRF Connect environment variables..."
-    export NRF_CLI_DIR="${OH_MY_SDK_BASE}/nordic-cli/nrf-command-line-tools"
-    export JLINK_DIR="${OH_MY_SDK_BASE}/nordic-cli/JLink_Linux_V794e_x86_64"
-    export PATH="${NRF_CLI_DIR}/bin:${JLINK_DIR}:${PATH}"
-    export BUILD_DIR="build"
-    
     # Export Zephyr CMake package (NRF uses Zephyr)
     _oh_my_sdk_print_status "info" "Exporting Zephyr CMake package..."
     west zephyr-export
     
     # Add nrfutil to PATH
-    export PATH="${VIRTUAL_ENV}/bin:${PATH}"
+    typeset -U PATH
+    PATH="${VIRTUAL_ENV}/bin:$PATH"
     
     _oh_my_sdk_print_status "success" "NRF Connect environment activated!"
     echo
     _oh_my_sdk_print_status "info" "Available commands:"
-    echo "  • west build -b <board>     Build project for specific board"
-    echo "  • west flash                Flash project to board"
-    echo "  • west debug                Start debug session"
-    echo "  • nrfutil device list       List connected devices"
-    echo "  • nrfutil device recover    Recover a device"
-    echo "  • nrfutil device erase      Erase device memory"
-    echo "  • nrfutil dfu genpkg        Generate DFU package"
-    echo "  • nrfutil dfu serial        Perform DFU over serial"
-    echo "  • nrfutil dfu usb-serial    Perform DFU over USB"
+    echo "  • west help                  Show west command help"
+    echo "  • nrfutil help              Show nrfutil command help"
     echo "  • omsdk deactivate          Deactivate environment"
 }
 
@@ -760,4 +751,4 @@ function omsdk() {
 }
 
 # Export the main command
-export -f omsdk 
+typeset -f omsdk 
