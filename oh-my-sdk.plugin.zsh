@@ -8,6 +8,7 @@
 export OH_MY_SDK_BASE="${HOME}/.oh-my-sdk"
 export OH_MY_SDK_DIST="${OH_MY_SDK_BASE}/dist"
 export OH_MY_SDK_PYENV="${OH_MY_SDK_BASE}/pyenv"
+export OH_MY_SDK_LOCAL="${HOME}/.local"
 
 # Hook directories
 export OH_MY_SDK_HOOKS="${OH_MY_SDK_BASE}/hooks"
@@ -15,10 +16,35 @@ export OH_MY_SDK_HOOKS_INSTALL="${OH_MY_SDK_HOOKS}/install"
 export OH_MY_SDK_HOOKS_ACTIVATE="${OH_MY_SDK_HOOKS}/activate"
 export OH_MY_SDK_HOOKS_DEACTIVATE="${OH_MY_SDK_HOOKS}/deactivate"
 
+# Helper function to print status messages
+function _oh_my_sdk_print_status() {
+    local type="$1"
+    local message="$2"
+    
+    case "${type}" in
+        "info")
+            echo "ℹ️  ${message}"
+            ;;
+        "success")
+            echo "✅ ${message}"
+            ;;
+        "warning")
+            echo "⚠️  ${message}"
+            ;;
+        "error")
+            echo "❌ ${message}"
+            ;;
+        *)
+            echo "${message}"
+            ;;
+    esac
+}
+
 # Create necessary directories if they don't exist
 [[ ! -d "${OH_MY_SDK_BASE}" ]] && mkdir -p "${OH_MY_SDK_BASE}"
 [[ ! -d "${OH_MY_SDK_DIST}" ]] && mkdir -p "${OH_MY_SDK_DIST}"
 [[ ! -d "${OH_MY_SDK_PYENV}" ]] && mkdir -p "${OH_MY_SDK_PYENV}"
+[[ ! -d "${OH_MY_SDK_LOCAL}" ]] && mkdir -p "${OH_MY_SDK_LOCAL}"
 
 # Create hook directories if they don't exist
 [[ ! -d "${OH_MY_SDK_HOOKS}" ]] && mkdir -p "${OH_MY_SDK_HOOKS}"
@@ -95,7 +121,7 @@ function _oh_my_sdk_zephyr_installed() {
 
 # Function to check if NRF Connect SDK is installed
 function _oh_my_sdk_nrf_installed() {
-    [[ -d "${OH_MY_SDK_DIST}/nrf" ]] && [[ -f "${OH_MY_SDK_DIST}/nrf/nrf-env.sh" ]]
+    [[ -d "${OH_MY_SDK_DIST}/nrf" ]] && [[ -d "${OH_MY_SDK_DIST}/nrf/nrf" ]]
 }
 
 # Function to install Zephyr SDK
@@ -148,7 +174,7 @@ function install_nrf() {
     
     local nrf_dir="${OH_MY_SDK_DIST}/nrf"
     
-    if [[ ! -d "${nrf_dir}" ]]; then
+    if [[ ! -d "${nrf_dir}" ]] || [[ ! -d "${nrf_dir}/nrf" ]]; then
         _oh_my_sdk_print_status "info" "Creating NRF Connect workspace..."
         mkdir -p "${nrf_dir}"
         cd "${nrf_dir}"
@@ -161,30 +187,30 @@ function install_nrf() {
         # Install nrfutil and its dependencies in the virtual environment
         _oh_my_sdk_print_status "info" "Installing nrfutil and its dependencies..."
         pip install --upgrade pip
-        pip install nrfutil==6.1.7  # Using latest stable version
+        pip install nrfutil==5.2.0  # Using a stable version
         
         # Install essential nrfutil commands
-        _oh_my_sdk_print_status "info" "Installing nrfutil device command..."
-        nrfutil install device
-        
-        _oh_my_sdk_print_status "info" "Installing nrfutil nrf5sdk-tools..."
-        nrfutil install nrf5sdk-tools
-        
-        _oh_my_sdk_print_status "info" "Installing nrfutil completion..."
-        nrfutil install completion
-        nrfutil completion install zsh
+        _oh_my_sdk_print_status "info" "Installing nrfutil tools..."
+        pip install nrfutil[device]
+        pip install nrfutil[dfu]
+        pip install nrfutil[dfu-serial]
+        pip install nrfutil[dfu-usb-serial]
         
         # Download and install NRF Connect SDK
         _oh_my_sdk_print_status "info" "Downloading and installing NRF Connect SDK..."
-        nrfutil install ncs
+        west init -m https://github.com/nrfconnect/sdk-nrf --mr main .
+        west update
+        
+        # Export Zephyr CMake package
+        west zephyr-export
         
         deactivate
         _oh_my_sdk_print_status "success" "NRF Connect SDK installation complete!"
         echo
         _oh_my_sdk_print_status "info" "Next steps:"
-        echo "  1. Run 'activate_nrf' to activate the environment"
-        echo "  2. Run 'create_nrf_project <name>' to create a new project"
-        echo "  3. Run 'nrf_help' for more information"
+        echo "  1. Run 'omsdk activate nrf' to activate the environment"
+        echo "  2. Run 'omsdk create nrf <name>' to create a new project"
+        echo "  3. Run 'omsdk help nrf' for more information"
     else
         _oh_my_sdk_print_status "warning" "NRF Connect SDK is already installed."
     fi
@@ -207,7 +233,7 @@ function activate_zephyr() {
 # Function to activate NRF Connect environment
 function activate_nrf() {
     if ! _oh_my_sdk_nrf_installed; then
-        _oh_my_sdk_print_status "error" "NRF Connect SDK is not installed. Please run 'install_nrf' first."
+        _oh_my_sdk_print_status "error" "NRF Connect SDK is not installed. Please run 'omsdk install nrf' first."
         return 1
     fi
     
@@ -229,6 +255,9 @@ function activate_nrf() {
     _oh_my_sdk_print_status "info" "Exporting Zephyr CMake package..."
     west zephyr-export
     
+    # Add nrfutil to PATH
+    export PATH="${VIRTUAL_ENV}/bin:${PATH}"
+    
     _oh_my_sdk_print_status "success" "NRF Connect environment activated!"
     echo
     _oh_my_sdk_print_status "info" "Available commands:"
@@ -241,7 +270,7 @@ function activate_nrf() {
     echo "  • nrfutil dfu genpkg        Generate DFU package"
     echo "  • nrfutil dfu serial        Perform DFU over serial"
     echo "  • nrfutil dfu usb-serial    Perform DFU over USB"
-    echo "  • deactivate_sdk            Deactivate environment"
+    echo "  • omsdk deactivate          Deactivate environment"
 }
 
 # Function to deactivate current environment
@@ -263,8 +292,27 @@ function _oh_my_sdk_is_zephyr_project() {
 # Function to check if a directory is an NRF project
 function _oh_my_sdk_is_nrf_project() {
     local dir="$1"
-    [[ -f "${dir}/prj.conf" ]] && [[ -f "${dir}/CMakeLists.txt" ]] && \
-    ([[ -f "${dir}/app.overlay" ]] || ls "${dir}"/*.overlay 1> /dev/null 2>&1)
+    local nrf_dir="${OH_MY_SDK_DIST}/nrf"
+    
+    # Basic project structure check
+    if [[ ! -f "${dir}/prj.conf" ]] || [[ ! -f "${dir}/CMakeLists.txt" ]]; then
+        return 1
+    fi
+    
+    # Check for board overlay files in project directory
+    if [[ -d "${nrf_dir}/nrf/boards/nordic" ]]; then
+        # Get list of valid board names from SDK
+        local valid_boards=($(find "${nrf_dir}/nrf/boards/nordic" -maxdepth 1 -type d -exec basename {} \;))
+        
+        # Check if any overlay file matches a valid board name
+        for board in "${valid_boards[@]}"; do
+            if [[ -f "${dir}/${board}.overlay" ]]; then
+                return 0
+            fi
+        done
+    fi
+    
+    return 1
 }
 
 # Auto-detect and activate environment based on current directory
@@ -376,15 +424,24 @@ function list_hooks() {
 # Function to list available NRF boards
 function _oh_my_sdk_list_nrf_boards() {
     if ! _oh_my_sdk_nrf_installed; then
-        echo "NRF Connect SDK not installed. Please run 'install_nrf' first."
+        _oh_my_sdk_print_status "error" "NRF Connect SDK not installed. Please run 'omsdk install nrf' first."
         return 1
     fi
     
     local nrf_dir="${OH_MY_SDK_DIST}/nrf"
-    cd "${nrf_dir}"
-    _oh_my_sdk_activate_venv "nrf"
-    west boards | grep -i "nrf" | sort
-    deactivate
+    if [[ -d "${nrf_dir}/nrf/boards/nordic" ]]; then
+        _oh_my_sdk_print_status "info" "Available NRF boards:"
+        echo
+        for board in "${nrf_dir}/nrf/boards/nordic"/*/; do
+            if [[ -d "$board" ]]; then
+                local board_name=$(basename "$board")
+                echo "  • ${board_name}"
+            fi
+        done
+    else
+        _oh_my_sdk_print_status "error" "No board definitions found in SDK"
+        return 1
+    fi
 }
 
 # Function to create a new Zephyr project
@@ -441,25 +498,32 @@ EOL
 # Function to create a new NRF project
 function create_nrf_project() {
     if ! _oh_my_sdk_nrf_installed; then
-        echo "NRF Connect SDK not installed. Please run 'install_nrf' first."
+        _oh_my_sdk_print_status "error" "NRF Connect SDK is not installed. Please run 'omsdk install nrf' first."
         return 1
     fi
     
     local project_name="$1"
     if [[ -z "${project_name}" ]]; then
-        echo "Usage: create_nrf_project <project_name>"
+        _oh_my_sdk_print_status "error" "Usage: omsdk create nrf <project_name>"
         return 1
     fi
     
     # List available boards and prompt for selection
-    echo "Available NRF boards:"
+    _oh_my_sdk_print_status "info" "Available NRF boards:"
     _oh_my_sdk_list_nrf_boards
     
-    echo -n "Enter board name (e.g., nrf52840dk_nrf52840): "
+    echo -n "Enter board name: "
     read board_name
     
     if [[ -z "${board_name}" ]]; then
-        echo "Board name is required"
+        _oh_my_sdk_print_status "error" "Board name is required"
+        return 1
+    fi
+    
+    # Verify board exists in SDK
+    local nrf_dir="${OH_MY_SDK_DIST}/nrf"
+    if [[ ! -d "${nrf_dir}/nrf/boards/nordic/${board_name}" ]]; then
+        _oh_my_sdk_print_status "error" "Invalid board name: ${board_name}"
         return 1
     fi
     
@@ -497,17 +561,18 @@ CONFIG_BT=y
 CONFIG_BT_PERIPHERAL=y
 EOL
     
-    # Create app.overlay for NRF-specific configurations
-    cat > app.overlay << 'EOL'
+    # Create board-specific overlay file
+    cat > "${board_name}.overlay" << 'EOL'
 &default_conn {
     status = "okay";
 };
 EOL
     
-    echo "Created new NRF project: ${project_name}"
-    echo "To build the project:"
-    echo "1. cd ${project_name}"
-    echo "2. west build -b ${board_name}"
+    _oh_my_sdk_print_status "success" "Created new NRF project: ${project_name}"
+    echo
+    _oh_my_sdk_print_status "info" "To build the project:"
+    echo "  1. cd ${project_name}"
+    echo "  2. west build -b ${board_name}"
 }
 
 # Function to show Zephyr help
@@ -548,34 +613,34 @@ function nrf_help() {
     echo "==================="
     echo
     echo "Installation:"
-    echo "  install_nrf                 Install NRF Connect SDK"
-    echo "  create_nrf_project <name>   Create a new NRF project"
-    echo "  _oh_my_sdk_list_nrf_boards List available NRF boards"
+    echo "  omsdk install nrf              Install NRF Connect SDK"
+    echo "  omsdk create nrf <name>        Create a new NRF project"
+    echo "  omsdk list nrf boards         List available NRF boards"
     echo
     echo "Environment:"
-    echo "  activate_nrf                Activate NRF environment"
-    echo "  deactivate_sdk              Deactivate current environment"
+    echo "  omsdk activate nrf             Activate NRF environment"
+    echo "  omsdk deactivate              Deactivate current environment"
     echo
     echo "Project Management:"
-    echo "  west build -b <board>       Build project for specific board"
-    echo "  west flash                  Flash project to board"
-    echo "  west debug                  Start debug session"
+    echo "  west build -b <board>         Build project for specific board"
+    echo "  west flash                    Flash project to board"
+    echo "  west debug                    Start debug session"
     echo
     echo "Common Boards:"
-    echo "  nrf52840dk_nrf52840        nRF52840 Development Kit"
-    echo "  nrf52dk_nrf52832           nRF52 Development Kit"
-    echo "  nrf5340dk_nrf5340_cpuapp   nRF5340 Development Kit"
-    echo "  nrf9160dk_nrf9160          nRF9160 Development Kit"
+    echo "  nrf52840dk_nrf52840          nRF52840 Development Kit"
+    echo "  nrf52dk_nrf52832             nRF52 Development Kit"
+    echo "  nrf5340dk_nrf5340_cpuapp     nRF5340 Development Kit"
+    echo "  nrf9160dk_nrf9160            nRF9160 Development Kit"
     echo
     echo "Configuration:"
-    echo "  prj.conf                    Project configuration"
-    echo "  CMakeLists.txt             Build configuration"
-    echo "  app.overlay                NRF-specific device tree overlay"
+    echo "  prj.conf                      Project configuration"
+    echo "  CMakeLists.txt               Build configuration"
+    echo "  app.overlay                  NRF-specific device tree overlay"
     echo
     echo "Bluetooth:"
-    echo "  CONFIG_BT=y                Enable Bluetooth"
-    echo "  CONFIG_BT_PERIPHERAL=y     Configure as peripheral"
-    echo "  CONFIG_BT_CENTRAL=y        Configure as central"
+    echo "  CONFIG_BT=y                  Enable Bluetooth"
+    echo "  CONFIG_BT_PERIPHERAL=y       Configure as peripheral"
+    echo "  CONFIG_BT_CENTRAL=y          Configure as central"
     echo
     echo "Documentation:"
     echo "  https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/"
@@ -614,4 +679,134 @@ export -f _oh_my_sdk_list_nrf_boards
 # Export help commands
 export -f zephyr_help
 export -f nrf_help
-export -f zap_oh_my_sdk 
+export -f zap_oh_my_sdk
+
+# Main omsdk command function
+function omsdk() {
+    case "$1" in
+        "help")
+            case "$2" in
+                "nrf")
+                    echo "NRF Connect SDK Help"
+                    echo "==================="
+                    echo
+                    echo "Installation:"
+                    echo "  omsdk install nrf              Install NRF Connect SDK"
+                    echo "  omsdk create nrf <name>        Create a new NRF project"
+                    echo "  omsdk list nrf boards         List available NRF boards"
+                    echo
+                    echo "Environment:"
+                    echo "  omsdk activate nrf             Activate NRF environment"
+                    echo "  omsdk deactivate              Deactivate current environment"
+                    echo
+                    echo "Project Management:"
+                    echo "  west build -b <board>         Build project for specific board"
+                    echo "  west flash                    Flash project to board"
+                    echo "  west debug                    Start debug session"
+                    echo
+                    echo "Common Boards:"
+                    echo "  nrf52840dk_nrf52840          nRF52840 Development Kit"
+                    echo "  nrf52dk_nrf52832             nRF52 Development Kit"
+                    echo "  nrf5340dk_nrf5340_cpuapp     nRF5340 Development Kit"
+                    echo "  nrf9160dk_nrf9160            nRF9160 Development Kit"
+                    echo
+                    echo "Configuration:"
+                    echo "  prj.conf                      Project configuration"
+                    echo "  CMakeLists.txt               Build configuration"
+                    echo "  app.overlay                  NRF-specific device tree overlay"
+                    echo
+                    echo "Bluetooth:"
+                    echo "  CONFIG_BT=y                  Enable Bluetooth"
+                    echo "  CONFIG_BT_PERIPHERAL=y       Configure as peripheral"
+                    echo "  CONFIG_BT_CENTRAL=y          Configure as central"
+                    echo
+                    echo "Documentation:"
+                    echo "  https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/nrf/"
+                    ;;
+                *)
+                    echo "oh-my-sdk - SDK Management Tool"
+                    echo
+                    echo "Available commands:"
+                    echo "  omsdk help                    - Show this help message"
+                    echo "  omsdk help nrf               - Show NRF Connect SDK help"
+                    echo "  omsdk install nrf            - Install NRF Connect SDK"
+                    echo "  omsdk activate nrf           - Activate NRF environment"
+                    echo "  omsdk deactivate             - Deactivate current environment"
+                    echo "  omsdk create nrf <name>      - Create a new NRF project"
+                    echo "  omsdk list nrf boards        - List available NRF boards"
+                    echo "  omsdk status                 - Show current environment status"
+                    echo "  omsdk list                   - List installed SDKs"
+                    echo "  omsdk zap                    - Remove all SDK installations"
+                    ;;
+            esac
+            ;;
+        "install")
+            case "$2" in
+                "nrf")
+                    install_nrf
+                    ;;
+                *)
+                    echo "Usage: omsdk install [nrf]"
+                    return 1
+                    ;;
+            esac
+            ;;
+        "activate")
+            case "$2" in
+                "nrf")
+                    activate_nrf
+                    ;;
+                *)
+                    echo "Usage: omsdk activate [nrf]"
+                    return 1
+                    ;;
+            esac
+            ;;
+        "create")
+            case "$2" in
+                "nrf")
+                    create_nrf_project "$3"
+                    ;;
+                *)
+                    echo "Usage: omsdk create [nrf] <project_name>"
+                    return 1
+                    ;;
+            esac
+            ;;
+        "list")
+            case "$2" in
+                "nrf")
+                    case "$3" in
+                        "boards")
+                            _oh_my_sdk_list_nrf_boards
+                            ;;
+                        *)
+                            echo "Usage: omsdk list nrf [boards]"
+                            return 1
+                            ;;
+                    esac
+                    ;;
+                *)
+                    echo "Usage: omsdk list [nrf]"
+                    return 1
+                    ;;
+            esac
+            ;;
+        "deactivate")
+            deactivate_sdk
+            ;;
+        "status")
+            show_sdk_status
+            ;;
+        "zap")
+            zap_sdk
+            ;;
+        *)
+            echo "Usage: omsdk [help|install|activate|create|list|deactivate|status|zap]"
+            return 1
+            ;;
+    esac
+}
+
+# Export the main command
+export -f omsdk 
