@@ -4,11 +4,23 @@
 # Author: Your Name
 # License: MIT
 
+echo "Starting oh-my-sdk plugin initialization..."
+
 # Base directory for SDK installations
 export OH_MY_SDK_BASE="${HOME}/.oh-my-sdk"
 export OH_MY_SDK_DIST="${OH_MY_SDK_BASE}/dist"
 export OH_MY_SDK_PYENV="${OH_MY_SDK_BASE}/pyenv"
 export OH_MY_SDK_LOCAL="${HOME}/.local"
+
+echo "Setting up directories..."
+
+# Create necessary directories if they don't exist
+mkdir -p "${OH_MY_SDK_BASE}"
+mkdir -p "${OH_MY_SDK_DIST}"
+mkdir -p "${OH_MY_SDK_PYENV}"
+mkdir -p "${OH_MY_SDK_LOCAL}"
+
+echo "Directories created"
 
 # Hook directories
 export OH_MY_SDK_HOOKS="${OH_MY_SDK_BASE}/hooks"
@@ -51,6 +63,8 @@ function _oh_my_sdk_print_status() {
             ;;
     esac
 }
+
+echo "Helper functions defined"
 
 # Helper function to check if a command exists
 function _oh_my_sdk_command_exists() {
