@@ -68,24 +68,67 @@ omsdk install nrf
 
 Activate NRF environment:
 ```bash
-omsdk activate nrf
-```
+➜  ~ omsdk activate nrf                                                      
+ℹ  OH_MY_SDK_DIST value: /home/netcraveos/.oh-my-sdk/dist
+ℹ  Looking for NRF directory at: /home/netcraveos/.oh-my-sdk/dist/nrf
+ℹ  Looking for Command Line Tools at: /home/netcraveos/.oh-my-sdk/dist/nrf-command-line-tools
+ℹ  Activating Python virtual environment...
+ℹ  Looking for virtual environment at: /home/netcraveos/.oh-my-sdk/pyenv/nrf
+ℹ  Exporting Zephyr CMake package...
+Zephyr (/home/netcraveos/.oh-my-sdk/dist/nrf/zephyr/share/zephyr-package/cmake)
+has been added to the user package registry in:
+~/.cmake/packages/Zephyr
 
-Create a new NRF project:
-```bash
-omsdk create nrf my_project
-```
+ZephyrUnittest (/home/netcraveos/.oh-my-sdk/dist/nrf/zephyr/share/zephyrunittest-package/cmake)
+has been added to the user package registry in:
+~/.cmake/packages/ZephyrUnittest
 
-Show current status:
-```bash
-omsdk status
-```
+✅ NRF Connect environment activated!
 
-### Zephyr SDK
+ℹ  Available commands:
+  • west help                  Show west command help
+  • nrfutil help              Show nrfutil command help
+  • omsdk deactivate          Deactivate environment
+(nrf) ➜  nrf omsdk status      
+ℹ  Current environment: nrf
+ℹ  NRF Connect SDK location: /home/netcraveos/.oh-my-sdk/dist/nrf
+ℹ  Current directory: /home/netcraveos/.oh-my-sdk/dist/nrf
 
-Install Zephyr SDK:
-```bash
-install_zephyr
+ℹ  Checking SDK components...
+✅ ✓ nrf directory present
+✅ ✓ bootloader directory present
+✅ ✓ board definitions present
+
+ℹ  Checking Nordic Command Line Tools...
+✅ ✓ Command Line Tools directory present
+
+ℹ  Checking binary tools...
+✅ ✓ nrfjprog installed
+✅ ✓ mergehex installed
+✅ ✓ jlinkarm worker installed
+
+ℹ  Checking libraries...
+✅ ✓ nrfjprog library installed
+✅ ✓ highlevel nrfjprog library installed
+✅ ✓ DFU library installed
+
+ℹ  Checking Python components...
+✅ ✓ pynrfjprog installed
+
+ℹ  Checking Python environment...
+✅ ✓ west installed
+✅ ✓ nrfutil installed
+
+ℹ  Checking PATH...
+✅ ✓ Command Line Tools in PATH
+
+ℹ  Checking library paths...
+✅ ✓ Libraries in LD_LIBRARY_PATH
+
+ℹ  Checking environment variables...
+✅ ✓ ZEPHYR_BASE set
+✅ ✓ ZEPHYR_TOOLCHAIN_VARIANT set
+(nrf) ➜  nrf 
 ```
 
 Activate Zephyr environment:
