@@ -5,7 +5,7 @@ A Zsh plugin for managing SDK installations and environments.
 ## Quick Install
 
 ```bash
-curl -s https://raw.githubusercontent.com/paigeadelethompson/oh-my-sdk/master/ayy.sh | bash && zsh
+curl -s https://raw.githubusercontent.com/yourusername/oh-my-sdk/master/ayy.sh | bash && zsh
 ```
 
 ## Manual Installation
@@ -34,7 +34,7 @@ source ~/.antigen/antigen.zsh
 antigen use oh-my-zsh
 
 # Load oh-my-sdk plugin
-antigen bundle /path/to/SDKSetup
+antigen bundle /path/to/oh-my-sdk
 
 # Load syntax highlighting
 antigen bundle zsh-users/zsh-syntax-highlighting
@@ -52,7 +52,7 @@ zsh
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/SDKSetup.git
+git clone https://github.com/yourusername/oh-my-sdk.git
 ```
 
 2. The plugin will be automatically loaded by antigen.

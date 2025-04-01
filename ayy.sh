@@ -15,7 +15,7 @@ source ~/.antigen/antigen.zsh
 antigen use oh-my-zsh
 
 # Load oh-my-sdk plugin
-antigen bundle /home/netcraveos/CursorProjects/SDKSetup
+antigen bundle /home/netcraveos/CursorProjects/oh-my-sdk
 
 # Load syntax highlighting
 antigen bundle zsh-users/zsh-syntax-highlighting
