@@ -5,28 +5,22 @@
 # License: MIT
 
 # Base directory for SDK installations
-local OH_MY_SDK_BASE="${HOME}/.oh-my-sdk"
-local OH_MY_SDK_DIST="${OH_MY_SDK_BASE}/dist"
-local OH_MY_SDK_PYENV="${OH_MY_SDK_BASE}/pyenv"
-local OH_MY_SDK_LOCAL="${HOME}/.local"
+typeset -g OH_MY_SDK_BASE="${HOME}/.oh-my-sdk"
+typeset -g OH_MY_SDK_DIST="${HOME}/.oh-my-sdk/dist"
+typeset -g OH_MY_SDK_PYENV="${OH_MY_SDK_BASE}/pyenv"
+typeset -g OH_MY_SDK_LOCAL="${HOME}/.local"
 
-# Hook directories
-local OH_MY_SDK_HOOKS="${OH_MY_SDK_BASE}/hooks"
-local OH_MY_SDK_HOOKS_INSTALL="${OH_MY_SDK_HOOKS}/install"
-local OH_MY_SDK_HOOKS_ACTIVATE="${OH_MY_SDK_HOOKS}/activate"
-local OH_MY_SDK_HOOKS_DEACTIVATE="${OH_MY_SDK_HOOKS}/deactivate"
+# Initialize plugin
+function _oh_my_sdk_init() {
+    # Create necessary directories if they don't exist
+    [[ ! -d "${OH_MY_SDK_BASE}" ]] && mkdir -p "${OH_MY_SDK_BASE}"
+    [[ ! -d "${OH_MY_SDK_DIST}" ]] && mkdir -p "${OH_MY_SDK_DIST}"
+    [[ ! -d "${OH_MY_SDK_PYENV}" ]] && mkdir -p "${OH_MY_SDK_PYENV}"
+    [[ ! -d "${OH_MY_SDK_LOCAL}" ]] && mkdir -p "${OH_MY_SDK_LOCAL}"
+}
 
-# Create necessary directories if they don't exist
-[[ ! -d "${OH_MY_SDK_BASE}" ]] && mkdir -p "${OH_MY_SDK_BASE}"
-[[ ! -d "${OH_MY_SDK_DIST}" ]] && mkdir -p "${OH_MY_SDK_DIST}"
-[[ ! -d "${OH_MY_SDK_PYENV}" ]] && mkdir -p "${OH_MY_SDK_PYENV}"
-[[ ! -d "${OH_MY_SDK_LOCAL}" ]] && mkdir -p "${OH_MY_SDK_LOCAL}"
-
-# Create hook directories if they don't exist
-[[ ! -d "${OH_MY_SDK_HOOKS}" ]] && mkdir -p "${OH_MY_SDK_HOOKS}"
-[[ ! -d "${OH_MY_SDK_HOOKS_INSTALL}" ]] && mkdir -p "${OH_MY_SDK_HOOKS_INSTALL}"
-[[ ! -d "${OH_MY_SDK_HOOKS_ACTIVATE}" ]] && mkdir -p "${OH_MY_SDK_HOOKS_ACTIVATE}"
-[[ ! -d "${OH_MY_SDK_HOOKS_DEACTIVATE}" ]] && mkdir -p "${OH_MY_SDK_HOOKS_DEACTIVATE}"
+# Initialize plugin when sourced
+_oh_my_sdk_init
 
 # Helper function to print status messages
 function _oh_my_sdk_print_status() {
@@ -59,7 +53,9 @@ function _oh_my_sdk_command_exists() {
 
 # Helper function to check if a Python virtual environment exists
 function _oh_my_sdk_venv_exists() {
-    [[ -d "${OH_MY_SDK_PYENV}/$1" ]]
+    local venv_name="$1"
+    local venv_path="${OH_MY_SDK_PYENV}/${venv_name}"
+    [[ -d "${venv_path}" ]] && [[ -f "${venv_path}/bin/activate" ]]
 }
 
 # Helper function to create a Python virtual environment
@@ -77,10 +73,14 @@ function _oh_my_sdk_activate_venv() {
     local venv_name="$1"
     local venv_path="${OH_MY_SDK_PYENV}/${venv_name}"
     
+    # Debug output
+    _oh_my_sdk_print_status "info" "Looking for virtual environment at: ${venv_path}"
+    
     if _oh_my_sdk_venv_exists "${venv_name}"; then
         source "${venv_path}/bin/activate"
         return 0
     fi
+    _oh_my_sdk_print_status "error" "Virtual environment ${venv_name} not found at ${venv_path}"
     return 1
 }
 
@@ -106,12 +106,19 @@ function _oh_my_sdk_install_system_deps() {
         "libmagic1"
     )
     
+    # Check which packages are missing
+    local missing_deps=()
     for dep in "${deps[@]}"; do
         if ! _oh_my_sdk_command_exists "$dep"; then
-            echo "Installing $dep..."
-            sudo apt-get install -y "$dep"
+            missing_deps+=("$dep")
         fi
     done
+    
+    # Install missing packages in one go
+    if [[ ${#missing_deps[@]} -gt 0 ]]; then
+        _oh_my_sdk_print_status "info" "Installing system dependencies..."
+        sudo apt-get install -y "${missing_deps[@]}"
+    fi
 }
 
 # Function to check if Zephyr SDK is installed
@@ -121,7 +128,7 @@ function _oh_my_sdk_zephyr_installed() {
 
 # Function to check if NRF Connect SDK is installed
 function _oh_my_sdk_nrf_installed() {
-    [[ -d "${OH_MY_SDK_DIST}/nrf" ]] && [[ -d "${OH_MY_SDK_DIST}/nrf/nrf" ]]
+    [[ -d "${OH_MY_SDK_DIST}/nrf" ]] && [[ -d "${OH_MY_SDK_DIST}/nrf/nrf" ]] && [[ -d "${OH_MY_SDK_DIST}/nrf/bootloader" ]]
 }
 
 # Function to install Zephyr SDK
@@ -202,25 +209,42 @@ function install_nrf() {
         west update
         
         # Export Zephyr CMake package
-        west zephyr-export
+        _oh_my_sdk_print_status "info" "Exporting Zephyr CMake package..."
+        if ! west zephyr-export; then
+            _oh_my_sdk_print_status "error" "Failed to export Zephyr CMake package"
+            return 1
+        fi
         
-        # Install Nordic Command Line Tools
-        _oh_my_sdk_print_status "info" "Installing Nordic Command Line Tools..."
-        local nrf_cli_url="https://nsscprodmedia.blob.core.windows.net/prod/software-and-other-downloads/desktop-software/nrf-command-line-tools/sw/versions-10-x-x/10-24-2/nrf-command-line-tools-10.24.2_linux-amd64.tar.gz"
-        local nrf_cli_tar="${OH_MY_SDK_LOCAL}/nrf-command-line-tools.tar.gz"
-        
-        # Download the tools
-        wget -O "${nrf_cli_tar}" "${nrf_cli_url}"
-        
-        # Extract to ~/.local
-        tar -xzf "${nrf_cli_tar}" -C "${OH_MY_SDK_LOCAL}"
-        
-        # Clean up the tar file
-        rm "${nrf_cli_tar}"
+        # Set Zephyr environment variables
+        export ZEPHYR_BASE="${nrf_dir}/zephyr"
+        export ZEPHYR_TOOLCHAIN_VARIANT="zephyr"
         
         # Add Nordic tools to PATH
-        typeset -U PATH
-        PATH="${OH_MY_SDK_LOCAL}/nrf-command-line-tools/bin:$PATH"
+        PATH="${nrf_cli_dir}/bin:${PATH}"
+        export PATH
+        
+        # Add library path
+        LD_LIBRARY_PATH="${nrf_cli_dir}/lib:${LD_LIBRARY_PATH}"
+        export LD_LIBRARY_PATH
+        
+        # Add include path
+        C_INCLUDE_PATH="${nrf_cli_dir}/include:${C_INCLUDE_PATH}"
+        export C_INCLUDE_PATH
+        
+        # Add JLink to PATH if installed
+        # if [[ -d "${OH_MY_SDK_DIST}/jlink" ]]; then
+        #     PATH="${OH_MY_SDK_DIST}/jlink:${PATH}"
+        #     LD_LIBRARY_PATH="${OH_MY_SDK_DIST}/jlink/GDBServer:${LD_LIBRARY_PATH}"
+        #     export PATH LD_LIBRARY_PATH
+        #     
+        #     # Check for udev rules
+        #     if [[ ! -f "/etc/udev/rules.d/99-jlink.rules" ]]; then
+        #         _oh_my_sdk_print_status "info" "Note: To enable JLink access without sudo, you can install the udev rules:"
+        #         echo "  sudo cp ${OH_MY_SDK_DIST}/jlink/etc/99-jlink.rules /etc/udev/rules.d/99-jlink.rules"
+        #         echo "  sudo udevadm control --reload-rules"
+        #         echo "  sudo udevadm trigger"
+        #     fi
+        # fi
         
         deactivate
         _oh_my_sdk_print_status "success" "NRF Connect SDK installation complete!"
@@ -250,25 +274,77 @@ function activate_zephyr() {
 
 # Function to activate NRF Connect environment
 function activate_nrf() {
-    if ! _oh_my_sdk_nrf_installed; then
-        _oh_my_sdk_print_status "error" "NRF Connect SDK is not installed. Please run 'omsdk install nrf' first."
+    # Debug output for variable
+    _oh_my_sdk_print_status "info" "OH_MY_SDK_DIST value: ${OH_MY_SDK_DIST}"
+    
+    local nrf_dir="${OH_MY_SDK_DIST}/nrf"
+    local nrf_cli_dir="${OH_MY_SDK_DIST}/nrf-command-line-tools"
+    
+    # Debug output
+    _oh_my_sdk_print_status "info" "Looking for NRF directory at: ${nrf_dir}"
+    _oh_my_sdk_print_status "info" "Looking for Command Line Tools at: ${nrf_cli_dir}"
+    
+    # Check if directories exist
+    if [[ ! -d "${nrf_dir}" ]]; then
+        _oh_my_sdk_print_status "error" "NRF directory not found at ${nrf_dir}"
         return 1
     fi
     
-    local nrf_dir="${OH_MY_SDK_DIST}/nrf"
-    cd "${nrf_dir}"
+    if [[ ! -d "${nrf_cli_dir}" ]]; then
+        _oh_my_sdk_print_status "error" "Command Line Tools directory not found at ${nrf_cli_dir}"
+        return 1
+    fi
+    
+    # Change to NRF directory
+    if ! cd "${nrf_dir}"; then
+        _oh_my_sdk_print_status "error" "Failed to change to NRF directory"
+        return 1
+    fi
     
     # Activate Python virtual environment
     _oh_my_sdk_print_status "info" "Activating Python virtual environment..."
-    _oh_my_sdk_activate_venv "nrf"
+    if ! _oh_my_sdk_activate_venv "nrf"; then
+        _oh_my_sdk_print_status "error" "Failed to activate virtual environment"
+        return 1
+    fi
     
     # Export Zephyr CMake package (NRF uses Zephyr)
     _oh_my_sdk_print_status "info" "Exporting Zephyr CMake package..."
-    west zephyr-export
+    if ! west zephyr-export; then
+        _oh_my_sdk_print_status "error" "Failed to export Zephyr CMake package"
+        return 1
+    fi
     
-    # Add nrfutil to PATH
-    typeset -U PATH
-    PATH="${VIRTUAL_ENV}/bin:$PATH"
+    # Set Zephyr environment variables
+    export ZEPHYR_BASE="${nrf_dir}/zephyr"
+    export ZEPHYR_TOOLCHAIN_VARIANT="zephyr"
+    
+    # Add Nordic tools to PATH
+    PATH="${nrf_cli_dir}/bin:${PATH}"
+    export PATH
+    
+    # Add library path
+    LD_LIBRARY_PATH="${nrf_cli_dir}/lib:${LD_LIBRARY_PATH}"
+    export LD_LIBRARY_PATH
+    
+    # Add include path
+    C_INCLUDE_PATH="${nrf_cli_dir}/include:${C_INCLUDE_PATH}"
+    export C_INCLUDE_PATH
+    
+    # Add JLink to PATH if installed
+    # if [[ -d "${OH_MY_SDK_DIST}/jlink" ]]; then
+    #     PATH="${OH_MY_SDK_DIST}/jlink:${PATH}"
+    #     LD_LIBRARY_PATH="${OH_MY_SDK_DIST}/jlink/GDBServer:${LD_LIBRARY_PATH}"
+    #     export PATH LD_LIBRARY_PATH
+    #     
+    #     # Check for udev rules
+    #     if [[ ! -f "/etc/udev/rules.d/99-jlink.rules" ]]; then
+    #         _oh_my_sdk_print_status "info" "Note: To enable JLink access without sudo, you can install the udev rules:"
+    #         echo "  sudo cp ${OH_MY_SDK_DIST}/jlink/etc/99-jlink.rules /etc/udev/rules.d/99-jlink.rules"
+    #         echo "  sudo udevadm control --reload-rules"
+    #         echo "  sudo udevadm trigger"
+    #     fi
+    # fi
     
     _oh_my_sdk_print_status "success" "NRF Connect environment activated!"
     echo
@@ -449,55 +525,100 @@ function _oh_my_sdk_list_nrf_boards() {
     fi
 }
 
-# Function to create a new Zephyr project
-function create_zephyr_project() {
-    if ! _oh_my_sdk_zephyr_installed; then
-        echo "Zephyr SDK not installed. Please run 'install_zephyr' first."
-        return 1
+# Function to show current environment status
+function show_status() {
+    if [[ -n "${VIRTUAL_ENV}" ]]; then
+        local venv_name=$(basename "${VIRTUAL_ENV}")
+        _oh_my_sdk_print_status "info" "Current environment: ${venv_name}"
+        
+        # Show NRF-specific status
+        if [[ "${venv_name}" == "nrf" ]]; then
+            local nrf_dir="${OH_MY_SDK_DIST}/nrf"
+            local nrf_cli_dir="${OH_MY_SDK_DIST}/nrf-command-line-tools"
+            
+            # Check NRF Connect SDK
+            if [[ -d "${nrf_dir}" ]]; then
+                _oh_my_sdk_print_status "info" "NRF Connect SDK location: ${nrf_dir}"
+                _oh_my_sdk_print_status "info" "Current directory: ${PWD}"
+                
+                # Check critical SDK components
+                echo
+                _oh_my_sdk_print_status "info" "Checking SDK components..."
+                [[ -d "${nrf_dir}/nrf" ]] && _oh_my_sdk_print_status "success" "✓ nrf directory present" || _oh_my_sdk_print_status "error" "✗ nrf directory missing"
+                [[ -d "${nrf_dir}/bootloader" ]] && _oh_my_sdk_print_status "success" "✓ bootloader directory present" || _oh_my_sdk_print_status "error" "✗ bootloader directory missing"
+                [[ -d "${nrf_dir}/nrf/boards/nordic" ]] && _oh_my_sdk_print_status "success" "✓ board definitions present" || _oh_my_sdk_print_status "error" "✗ board definitions missing"
+                
+                # Check Nordic Command Line Tools
+                echo
+                _oh_my_sdk_print_status "info" "Checking Nordic Command Line Tools..."
+                [[ -d "${nrf_cli_dir}" ]] && _oh_my_sdk_print_status "success" "✓ Command Line Tools directory present" || _oh_my_sdk_print_status "error" "✗ Command Line Tools directory missing"
+                
+                # Check bin directory
+                echo
+                _oh_my_sdk_print_status "info" "Checking binary tools..."
+                [[ -f "${nrf_cli_dir}/bin/nrfjprog" ]] && _oh_my_sdk_print_status "success" "✓ nrfjprog installed" || _oh_my_sdk_print_status "error" "✗ nrfjprog missing"
+                [[ -f "${nrf_cli_dir}/bin/mergehex" ]] && _oh_my_sdk_print_status "success" "✓ mergehex installed" || _oh_my_sdk_print_status "error" "✗ mergehex missing"
+                [[ -f "${nrf_cli_dir}/bin/jlinkarm_nrf_worker_linux" ]] && _oh_my_sdk_print_status "success" "✓ jlinkarm worker installed" || _oh_my_sdk_print_status "error" "✗ jlinkarm worker missing"
+                
+                # Check lib directory
+                echo
+                _oh_my_sdk_print_status "info" "Checking libraries..."
+                [[ -f "${nrf_cli_dir}/lib/libnrfjprogdll.so" ]] && _oh_my_sdk_print_status "success" "✓ nrfjprog library installed" || _oh_my_sdk_print_status "error" "✗ nrfjprog library missing"
+                [[ -f "${nrf_cli_dir}/lib/libhighlevelnrfjprog.so" ]] && _oh_my_sdk_print_status "success" "✓ highlevel nrfjprog library installed" || _oh_my_sdk_print_status "error" "✗ highlevel nrfjprog library missing"
+                [[ -f "${nrf_cli_dir}/lib/libnrfdfu.so" ]] && _oh_my_sdk_print_status "success" "✓ DFU library installed" || _oh_my_sdk_print_status "error" "✗ DFU library missing"
+                
+                # Check Python components
+                echo
+                _oh_my_sdk_print_status "info" "Checking Python components..."
+                [[ -d "${nrf_cli_dir}/python/pynrfjprog" ]] && _oh_my_sdk_print_status "success" "✓ pynrfjprog installed" || _oh_my_sdk_print_status "error" "✗ pynrfjprog missing"
+                
+                # Check Python environment
+                echo
+                _oh_my_sdk_print_status "info" "Checking Python environment..."
+                command -v west >/dev/null 2>&1 && _oh_my_sdk_print_status "success" "✓ west installed" || _oh_my_sdk_print_status "error" "✗ west missing"
+                command -v nrfutil >/dev/null 2>&1 && _oh_my_sdk_print_status "success" "✓ nrfutil installed" || _oh_my_sdk_print_status "error" "✗ nrfutil missing"
+                
+                # Check PATH
+                echo
+                _oh_my_sdk_print_status "info" "Checking PATH..."
+                [[ ":${PATH}:" == *":${nrf_cli_dir}/bin:"* ]] && _oh_my_sdk_print_status "success" "✓ Command Line Tools in PATH" || _oh_my_sdk_print_status "error" "✗ Command Line Tools not in PATH"
+                
+                # Check library paths
+                echo
+                _oh_my_sdk_print_status "info" "Checking library paths..."
+                [[ ":${LD_LIBRARY_PATH}:" == *":${nrf_cli_dir}/lib:"* ]] && _oh_my_sdk_print_status "success" "✓ Libraries in LD_LIBRARY_PATH" || _oh_my_sdk_print_status "error" "✗ Libraries not in LD_LIBRARY_PATH"
+                
+                # Check environment variables
+                echo
+                _oh_my_sdk_print_status "info" "Checking environment variables..."
+                [[ -n "${ZEPHYR_BASE}" ]] && _oh_my_sdk_print_status "success" "✓ ZEPHYR_BASE set" || _oh_my_sdk_print_status "error" "✗ ZEPHYR_BASE not set"
+                [[ -n "${ZEPHYR_TOOLCHAIN_VARIANT}" ]] && _oh_my_sdk_print_status "success" "✓ ZEPHYR_TOOLCHAIN_VARIANT set" || _oh_my_sdk_print_status "error" "✗ ZEPHYR_TOOLCHAIN_VARIANT not set"
+            else
+                _oh_my_sdk_print_status "error" "NRF Connect SDK directory not found at ${nrf_dir}"
+            fi
+            
+            # Check JLink
+            # echo
+            # _oh_my_sdk_print_status "info" "Checking JLink..."
+            # if [[ -d "${OH_MY_SDK_DIST}/jlink" ]]; then
+            #     _oh_my_sdk_print_status "success" "✓ JLink installed"
+            #     [[ -f "/etc/udev/rules.d/99-jlink.rules" ]] && _oh_my_sdk_print_status "success" "✓ JLink udev rules installed" || _oh_my_sdk_print_status "warning" "⚠️  JLink udev rules not installed"
+            #     [[ ":${PATH}:" == *":${OH_MY_SDK_DIST}/jlink:"* ]] && _oh_my_sdk_print_status "success" "✓ JLink in PATH" || _oh_my_sdk_print_status "error" "✗ JLink not in PATH"
+            #     
+            #     # Check JLink components
+            #     echo
+            #     _oh_my_sdk_print_status "info" "Checking JLink components..."
+            #     [[ -f "${OH_MY_SDK_DIST}/jlink/JLinkExe" ]] && _oh_my_sdk_print_status "success" "✓ JLinkExe installed" || _oh_my_sdk_print_status "error" "✗ JLinkExe missing"
+            #     [[ -f "${OH_MY_SDK_DIST}/jlink/JLinkGDBServer" ]] && _oh_my_sdk_print_status "success" "✓ JLinkGDBServer installed" || _oh_my_sdk_print_status "error" "✗ JLinkGDBServer missing"
+            #     [[ -d "${OH_MY_SDK_DIST}/jlink/GDBServer" ]] && _oh_my_sdk_print_status "success" "✓ GDBServer directory present" || _oh_my_sdk_print_status "error" "✗ GDBServer directory missing"
+            #     [[ -d "${OH_MY_SDK_DIST}/jlink/Samples" ]] && _oh_my_sdk_print_status "success" "✓ Samples directory present" || _oh_my_sdk_print_status "error" "✗ Samples directory missing"
+            # else
+            #     _oh_my_sdk_print_status "info" "ℹ️  JLink not installed"
+            # fi
+        fi
+    else
+        _oh_my_sdk_print_status "info" "No environment currently active"
     fi
-    
-    local project_name="$1"
-    if [[ -z "${project_name}" ]]; then
-        echo "Usage: create_zephyr_project <project_name>"
-        return 1
-    fi
-    
-    # Create project directory
-    mkdir -p "${project_name}"
-    cd "${project_name}"
-    
-    # Create basic project structure
-    cat > CMakeLists.txt << 'EOL'
-cmake_minimum_required(VERSION 3.20.0)
-find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
-project(${PROJECT_NAME})
-
-target_sources(app PRIVATE src/main.c)
-EOL
-    
-    mkdir -p src
-    cat > src/main.c << 'EOL'
-#include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-
-LOG_MODULE_REGISTER(main, CONFIG_LOG_DEFAULT_LEVEL);
-
-int main(void)
-{
-    LOG_INF("Hello World! %s", CONFIG_BOARD);
-    return 0;
-}
-EOL
-    
-    cat > prj.conf << 'EOL'
-CONFIG_LOG=y
-CONFIG_LOG_MODE_IMMEDIATE=y
-EOL
-    
-    echo "Created new Zephyr project: ${project_name}"
-    echo "To build the project:"
-    echo "1. cd ${project_name}"
-    echo "2. west build -b <board>"
 }
 
 # Function to create a new NRF project
@@ -513,24 +634,33 @@ function create_nrf_project() {
         return 1
     fi
     
-    # List available boards and prompt for selection
-    _oh_my_sdk_print_status "info" "Available NRF boards:"
-    _oh_my_sdk_list_nrf_boards
-    
-    echo -n "Enter board name: "
-    read board_name
-    
-    if [[ -z "${board_name}" ]]; then
-        _oh_my_sdk_print_status "error" "Board name is required"
-        return 1
-    fi
-    
-    # Verify board exists in SDK
+    # Get list of available boards
     local nrf_dir="${OH_MY_SDK_DIST}/nrf"
-    if [[ ! -d "${nrf_dir}/nrf/boards/nordic/${board_name}" ]]; then
-        _oh_my_sdk_print_status "error" "Invalid board name: ${board_name}"
+    if [[ ! -d "${nrf_dir}/nrf/boards/nordic" ]]; then
+        _oh_my_sdk_print_status "error" "No board definitions found in SDK"
         return 1
     fi
+    
+    local valid_boards=($(find "${nrf_dir}/nrf/boards/nordic" -maxdepth 1 -type d -exec basename {} \;))
+    
+    # Show available boards
+    _oh_my_sdk_print_status "info" "Available NRF boards:"
+    echo
+    for i in "${!valid_boards[@]}"; do
+        echo "  $((i+1)). ${valid_boards[$i]}"
+    done
+    
+    # Prompt for board selection
+    echo
+    echo -n "Select board number: "
+    read board_num
+    
+    if ! [[ "${board_num}" =~ ^[0-9]+$ ]] || [[ "${board_num}" -lt 1 ]] || [[ "${board_num}" -gt "${#valid_boards[@]}" ]]; then
+        _oh_my_sdk_print_status "error" "Invalid board selection"
+        return 1
+    fi
+    
+    local board_name="${valid_boards[$((board_num-1))]}"
     
     # Create project directory
     mkdir -p "${project_name}"
@@ -664,7 +794,7 @@ function zap_oh_my_sdk() {
 }
 
 # Main omsdk command function
-function omsdk() {
+omsdk() {
     case "$1" in
         ("help") case "$2" in
                 ("nrf") nrf_help ;;
@@ -677,9 +807,7 @@ function omsdk() {
                         echo "  omsdk activate nrf           - Activate NRF environment"
                         echo "  omsdk deactivate             - Deactivate current environment"
                         echo "  omsdk create nrf <name>      - Create a new NRF project"
-                        echo "  omsdk list nrf boards        - List available NRF boards"
                         echo "  omsdk status                 - Show current environment status"
-                        echo "  omsdk list                   - List installed SDKs"
                         echo "  omsdk zap                    - Remove all SDK installations" ;;
                 esac ;;
         ("install") case "$2" in
@@ -697,20 +825,10 @@ function omsdk() {
                 (*) echo "Usage: omsdk create [nrf] <project_name>"
                         return 1 ;;
                 esac ;;
-        ("list") case "$2" in
-                ("nrf") case "$3" in
-                        ("boards") _oh_my_sdk_list_nrf_boards ;;
-                        (*) echo "Usage: omsdk list nrf [boards]"
-                                return 1 ;;
-                        esac ;;
-                (*) echo "Usage: omsdk list [nrf]"
-                        return 1 ;;
-                esac ;;
+        ("status") show_status ;;
         ("deactivate") deactivate_sdk ;;
-        (*) echo "Usage: omsdk [help|install|activate|create|list|deactivate|status|zap]"
+        ("zap") zap_oh_my_sdk ;;
+        (*) echo "Usage: omsdk [help|install|activate|create|status|deactivate|zap]"
                 return 1 ;;
     esac
-}
-
-# Export the main command
-typeset -f omsdk 
+} 
