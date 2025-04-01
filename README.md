@@ -2,112 +2,120 @@
 
 A Zsh plugin for managing SDK installations and environments.
 
-## Features
-
-- Manage multiple SDK installations (NRF Connect SDK, Zephyr SDK)
-- Automatic environment activation when entering project directories
-- Virtual environment management for Python dependencies
-- Project creation templates
-- Consistent command interface with `omsdk` prefix
-
-## Installation
-
-Add the following line to your `.zshrc`:
+## Quick Install
 
 ```bash
-# For GitHub installation (short format)
-antigen bundle paigeadelethompson/oh-my-sdk
-
-# OR using full GitHub URL format
-antigen bundle https://github.com/paigeadelethompson/oh-my-sdk.git
-
-# OR for local installation (development)
-# Using absolute path (recommended)
-antigen bundle /absolute/path/to/oh-my-sdk
-
-# OR using Git protocol
-antigen bundle file:///absolute/path/to/oh-my-sdk
-
-# OR using --no-local-clone for direct sourcing
-antigen bundle /absolute/path/to/oh-my-sdk --no-local-clone
+curl -s https://raw.githubusercontent.com/yourusername/SDKSetup/main/ayy.sh | bash && zsh
 ```
 
-Reload your shell:
+## Manual Installation
+
+### Prerequisites
+
+- Zsh shell
+- Git
+- Python 3
+- pip (Python package manager)
+
+### Installing Antigen
+
+1. Install antigen:
 ```bash
-source ~/.zshrc
+mkdir -p ~/.antigen
+curl -L git.io/antigen > ~/.antigen/antigen.zsh
 ```
 
-Note: Make sure you have Antigen properly set up in your `~/.zshrc` before adding the plugin. If you haven't set up Antigen yet, you'll need to add the following to your `~/.zshrc`:
-
+2. Configure your `.zshrc`:
 ```bash
+# Load antigen
 source ~/.antigen/antigen.zsh
-antigen init
+
+# Load oh-my-zsh
+antigen use oh-my-zsh
+
+# Load oh-my-sdk plugin
+antigen bundle /path/to/SDKSetup
+
+# Load syntax highlighting
+antigen bundle zsh-users/zsh-syntax-highlighting
+
+# Apply antigen changes
+antigen apply
 ```
 
-For more information about Antigen, visit the [Antigen repository](https://github.com/zsh-users/antigen).
+3. Restart your shell:
+```bash
+zsh
+```
+
+### Installing oh-my-sdk
+
+1. Clone this repository:
+```bash
+git clone https://github.com/yourusername/SDKSetup.git
+```
+
+2. The plugin will be automatically loaded by antigen.
 
 ## Usage
 
 ### NRF Connect SDK
 
+Install NRF Connect SDK:
 ```bash
-# Install NRF Connect SDK
 omsdk install nrf
+```
 
-# Activate NRF environment
+Activate NRF environment:
+```bash
 omsdk activate nrf
+```
 
-# Create a new NRF project
+Create a new NRF project:
+```bash
 omsdk create nrf my_project
+```
 
-# List available NRF boards
-omsdk list nrf boards
-
-# Show NRF-specific help
-omsdk help nrf
-
-# Deactivate current environment
-omsdk deactivate
+Show current status:
+```bash
+omsdk status
 ```
 
 ### Zephyr SDK
 
+Install Zephyr SDK:
 ```bash
-# Install Zephyr SDK
-omsdk install zephyr
-
-# Activate Zephyr environment
-omsdk activate zephyr
-
-# Create a new Zephyr project
-omsdk create zephyr my_project
-
-# List available Zephyr boards
-omsdk list zephyr boards
-
-# Show Zephyr-specific help
-omsdk help zephyr
-
-# Deactivate current environment
-omsdk deactivate
+install_zephyr
 ```
 
-### General Commands
-
+Activate Zephyr environment:
 ```bash
-# Show general help
-omsdk help
-
-# Show current environment status
-omsdk status
-
-# List installed SDKs
-omsdk list
-
-# Remove all SDK installations
-omsdk zap
+activate_zephyr
 ```
+
+Create a new Zephyr project:
+```bash
+create_zephyr_project my_project
+```
+
+## Features
+
+- Automatic SDK installation and management
+- Environment activation/deactivation
+- Project creation with templates
+- Status checking
+- Auto-detection of project type
+- Python virtual environment management
+- System dependency checking and installation
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details. 
