@@ -5,7 +5,7 @@ A Zsh plugin for managing SDK installations and environments.
 ## Quick Install
 
 ```bash
-curl -s https://raw.githubusercontent.com/yourusername/SDKSetup/main/ayy.sh | bash && zsh
+curl -s https://raw.githubusercontent.com/paigeadelethompson/oh-my-sdk/master/ayy.sh | bash && zsh
 ```
 
 ## Manual Installation
