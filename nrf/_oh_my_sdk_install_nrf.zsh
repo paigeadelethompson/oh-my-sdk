@@ -8,6 +8,10 @@ function install_nrf() {
     _oh_my_sdk_print_status "info" "Checking system dependencies..."
     _oh_my_sdk_install_system_deps
     
+    # Install Zephyr SDK
+    _oh_my_sdk_print_status "info" "Installing Zephyr SDK..."
+    _oh_my_sdk_install_zephyr_sdk
+    
     local nrf_dir="${OH_MY_SDK_DIST}/nrf"
     
     if [[ ! -d "${nrf_dir}" ]] || [[ ! -d "${nrf_dir}/nrf" ]]; then
