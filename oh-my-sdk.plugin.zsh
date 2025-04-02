@@ -24,7 +24,7 @@ _oh_my_sdk_init
 
 # Source all individual function files
 SCRIPT_DIR="${0:A:h}"
-for funcfile in "${SCRIPT_DIR}"/_oh_my_sdk_*.zsh "${SCRIPT_DIR}"/install_*.zsh "${SCRIPT_DIR}"/activate_*.zsh "${SCRIPT_DIR}"/deactivate_*.zsh "${SCRIPT_DIR}"/create_*.zsh "${SCRIPT_DIR}"/show_status.zsh "${SCRIPT_DIR}"/*_help.zsh; do
+for funcfile in "${SCRIPT_DIR}"/nrf/_oh_my_sdk_*.zsh; do
     if [[ -f "${funcfile}" ]]; then
         source "${funcfile}"
     fi
@@ -34,13 +34,16 @@ done
 function _oh_my_sdk_auto_activate() {
     local current_dir="$PWD"
     
-    if _oh_my_sdk_is_zephyr_project "${current_dir}"; then
-        if _oh_my_sdk_zephyr_installed; then
-            activate_zephyr
-        else
-            echo "Zephyr SDK not installed. Run 'install_zephyr' to install."
+    # If we're already in a virtual environment, check if it matches the project type
+    if [[ -n "${VIRTUAL_ENV}" ]]; then
+        local venv_name=$(basename "${VIRTUAL_ENV}")
+        if [[ "${venv_name}" == "nrf" ]] && _oh_my_sdk_is_nrf_project "${current_dir}"; then
+            return 0  # Already in correct environment
         fi
-    elif _oh_my_sdk_is_nrf_project "${current_dir}"; then
+    fi
+    
+    # If we're not in a virtual environment or in the wrong one, activate the correct one
+    if _oh_my_sdk_is_nrf_project "${current_dir}"; then
         if _oh_my_sdk_nrf_installed; then
             activate_nrf
         else
