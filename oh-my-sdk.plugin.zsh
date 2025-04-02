@@ -51,8 +51,14 @@ function _oh_my_sdk_auto_activate() {
     # Save current working directory
     local CURRENT_PWD="$PWD"
     
-    if _oh_my_sdk_is_nrf_project; then
+    # Debug output
+    echo "Checking if $CURRENT_PWD is an NRF project..."
+    
+    if _oh_my_sdk_is_nrf_project "$CURRENT_PWD"; then
+        echo "NRF project detected, activating..."
         activate_nrf
+    else
+        echo "Not an NRF project"
     fi
     
     # Restore working directory
@@ -65,6 +71,9 @@ function _oh_my_sdk_auto_activate() {
 # Add auto-activation to chpwd hook
 autoload -U add-zsh-hook
 add-zsh-hook chpwd _oh_my_sdk_auto_activate
+
+# Run auto-activation on initial load
+_oh_my_sdk_auto_activate
 
 # Function to create a hook script
 function _oh_my_sdk_create_hook() {
