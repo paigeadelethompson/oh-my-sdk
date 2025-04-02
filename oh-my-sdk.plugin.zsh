@@ -45,6 +45,11 @@ function _oh_my_sdk_auto_activate() {
         return
     fi
     
+    # Skip if environment is already activated
+    if [[ -n "${OMSDK_NRF_ACTIVATED}" ]]; then
+        return
+    fi
+    
     # Set flag to prevent recursion
     _OH_MY_SDK_AUTO_ACTIVATING=1
     
