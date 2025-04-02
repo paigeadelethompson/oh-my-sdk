@@ -1,108 +1,94 @@
 # oh-my-sdk
 
-A Zsh plugin for managing SDK installations and environments.
-
-## Quick Install
-
-```bash
-curl -s https://raw.githubusercontent.com/paigeadelethompson/oh-my-sdk/master/install/ayy.sh | bash && zsh
-```
-
-## Manual Installation
-
-### Installing Antigen
-
-1. Install antigen:
-```bash
-mkdir -p ~/.antigen
-curl -L git.io/antigen > ~/.antigen/antigen.zsh
-```
-
-2. Configure your `.zshrc`:
-```bash
-# Load antigen
-source ~/.antigen/antigen.zsh
-
-# Load oh-my-zsh
-antigen use oh-my-zsh
-
-# Load oh-my-sdk plugin
-antigen bundle /path/to/oh-my-sdk
-
-# Load syntax highlighting
-antigen bundle zsh-users/zsh-syntax-highlighting
-
-# Apply antigen changes
-antigen apply
-```
-
-3. Restart your shell:
-```bash
-zsh
-```
-
-### Installing oh-my-sdk
-
-1. Clone this repository:
-```bash
-git clone https://github.com/paigeadelethompson/oh-my-sdk.git
-```
-
-2. The plugin will be automatically loaded by antigen.
-
-## Usage
-
-### NRF Connect SDK
-
-Install NRF Connect SDK:
-```bash
-omsdk install nrf
-```
-
-Activate NRF environment:
-```bash
-omsdk activate nrf
-```
-
-Create a new NRF project:
-```bash
-omsdk create nrf my_project
-```
-
-Check environment status:
-```bash
-omsdk status
-```
-
-Deactivate current environment:
-```bash
-omsdk deactivate
-```
-
-Show NRF-specific help:
-```bash
-omsdk help nrf
-```
+A Zsh plugin for managing SDK installations, with a focus on NRF Connect SDK and Zephyr development.
 
 ## Features
 
-- Automatic SDK installation and management
-- Environment activation/deactivation
-- Project creation with templates
-- Status checking
-- Auto-detection of project type
-- Python virtual environment management
-- System dependency checking and installation
-- Working directory preservation
+- Automatic environment activation when entering NRF/Zephyr project directories
+- Easy installation and management of NRF Connect SDK and Zephyr SDK
+- Virtual environment management for Python dependencies
+- Command completion for `west` and other tools
+- Project creation and management tools
+- System dependency management
 
-## Contributing
+## Installation
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Quick Install
+
+Run this command to automatically install Antigen and set up your `.zshrc`:
+```bash
+curl -s https://raw.githubusercontent.com/paigeadelethompson/oh-my-sdk/master/install/ayy.sh | bash && chsh -s $(which zsh)
+```
+
+### Manual Installation
+
+First, install [Antigen](https://github.com/zsh-users/antigen) if you haven't already.
+
+Then add these lines to your `.zshrc`:
+```zsh
+antigen bundle paigeadelethompson/oh-my-sdk
+antigen apply
+```
+
+## Usage
+
+### Basic Commands
+
+```zsh
+# Install NRF Connect SDK
+omsdk install nrf
+
+# Activate NRF environment
+omsdk activate nrf
+
+# Create a new NRF project
+omsdk create nrf <project_name>
+
+# Show current environment status
+omsdk status
+
+# Deactivate current environment
+omsdk deactivate
+
+# Get help
+omsdk help
+omsdk help nrf
+```
+
+### Project Management
+
+When you create a new NRF project, it will include:
+- Basic project structure with `CMakeLists.txt`
+- Sample `main.c` with logging enabled
+- Bluetooth configuration in `prj.conf`
+- Board-specific overlay file
+
+### Environment Variables
+
+The plugin sets up the following environment variables:
+- `ZEPHYR_BASE`: Path to Zephyr base directory
+- `ZEPHYR_TOOLCHAIN_VARIANT`: Set to "zephyr"
+- `OMSDK_NRF_ACTIVATED`: Flag indicating NRF environment is active
+
+### Auto-activation
+
+The plugin automatically activates the NRF environment when you `cd` into a directory that contains:
+- `prj.conf` and `CMakeLists.txt`
+- `west.yml` or `west.yaml`
+- `sample.yaml` (for sample projects)
+- Is located under the NRF SDK directory
+
+## Directory Structure
+
+```
+~/.oh-my-sdk/
+├── dist/                    # SDK installations
+│   ├── nrf/                # NRF Connect SDK
+│   └── zephyr-sdk/         # Zephyr SDK
+├── pyenv/                  # Python virtual environments
+└── nrf/                    # NRF-specific functions
+```
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+MIT License - see LICENSE file for details 
