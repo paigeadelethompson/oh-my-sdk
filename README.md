@@ -10,13 +10,6 @@ curl -s https://raw.githubusercontent.com/paigeadelethompson/oh-my-sdk/master/in
 
 ## Manual Installation
 
-### Prerequisites
-
-- Zsh shell
-- Git
-- Python 3
-- pip (Python package manager)
-
 ### Installing Antigen
 
 1. Install antigen:
