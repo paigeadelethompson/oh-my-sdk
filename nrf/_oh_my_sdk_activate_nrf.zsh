@@ -6,7 +6,7 @@ function activate_nrf() {
     if [[ -n "${OMSDK_NRF_ACTIVATED}" ]]; then
         _oh_my_sdk_print_status "info" "NRF environment already activated"
         return 0
-    }
+    fi
 
     # Debug output for variable
     _oh_my_sdk_print_status "info" "OH_MY_SDK_DIST value: ${OH_MY_SDK_DIST}"
