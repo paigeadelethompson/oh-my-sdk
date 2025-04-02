@@ -1,6 +1,6 @@
 # oh-my-sdk
 
-A Zsh plugin for managing SDK installations, with a focus on NRF Connect SDK and Zephyr development.
+A Zsh plugin for managing SDK installations; currently only supports the NRF Connect SDK.
 
 ## Features
 
