@@ -20,16 +20,20 @@ function _oh_my_sdk_install_jlink() {
                 sudo mkdir -p /opt/SEGGER
                 local jlink_name=$(basename "${jlink_dir}")
                 sudo ln -sf "${jlink_dir}" "/opt/SEGGER/${jlink_name}"
-                _oh_my_sdk_print_status "success" "Created symlink: /opt/SEGGER/${jlink_name} -> ${jlink_dir}"
+                sudo ln -sf "${jlink_dir}" "/opt/SEGGER/JLink"
+                _oh_my_sdk_print_status "success" "Created symlinks: /opt/SEGGER/${jlink_name} -> ${jlink_dir}"
+                _oh_my_sdk_print_status "success" "Created symlink: /opt/SEGGER/JLink -> ${jlink_dir}"
             else
                 _oh_my_sdk_print_status "info" "Directory /opt/SEGGER already exists."
                 local jlink_name=$(basename "${jlink_dir}")
                 if [[ ! -L "/opt/SEGGER/${jlink_name}" ]]; then
-                    _oh_my_sdk_print_status "info" "Creating symlink in existing /opt/SEGGER directory..."
+                    _oh_my_sdk_print_status "info" "Creating symlinks in existing /opt/SEGGER directory..."
                     sudo ln -sf "${jlink_dir}" "/opt/SEGGER/${jlink_name}"
-                    _oh_my_sdk_print_status "success" "Created symlink: /opt/SEGGER/${jlink_name} -> ${jlink_dir}"
+                    sudo ln -sf "${jlink_dir}" "/opt/SEGGER/JLink"
+                    _oh_my_sdk_print_status "success" "Created symlinks: /opt/SEGGER/${jlink_name} -> ${jlink_dir}"
+                    _oh_my_sdk_print_status "success" "Created symlink: /opt/SEGGER/JLink -> ${jlink_dir}"
                 else
-                    _oh_my_sdk_print_status "info" "Symlink already exists in /opt/SEGGER."
+                    _oh_my_sdk_print_status "info" "Symlinks already exist in /opt/SEGGER."
                 fi
             fi
         else

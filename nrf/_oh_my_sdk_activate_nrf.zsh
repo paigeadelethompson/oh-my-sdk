@@ -57,6 +57,10 @@ function activate_nrf() {
     PATH="${nrf_cli_dir}/bin:${PATH}"
     export PATH
     
+    # Add nrfutil bin to PATH
+    PATH="${HOME}/.nrfutil/bin:${PATH}"
+    export PATH
+    
     # Add library path
     LD_LIBRARY_PATH="${nrf_cli_dir}/lib:${LD_LIBRARY_PATH}"
     export LD_LIBRARY_PATH

@@ -30,6 +30,19 @@ antigen bundle paigeadelethompson/oh-my-sdk
 antigen apply
 ```
 
+### Optional: Make Installation Immutable
+
+If your filesystem supports it, you can make the SDK installation immutable while keeping logs writable:
+```bash
+# Make entire installation immutable
+chattr -R +i ~/.oh-my-sdk
+
+# Allow logs to be written
+chattr -R -i ~/.oh-my-sdk/dist/nrfutil/logs
+```
+
+> **Security Note**: This helps prevent unwanted modifications to your SDK installation, particularly from AI assistants or other automated tools that might attempt to modify files without proper authorization. The logs directory remains writable to ensure proper functionality while maintaining security.
+
 ## Usage
 
 ### Basic Commands

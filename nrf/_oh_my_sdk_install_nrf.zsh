@@ -60,6 +60,38 @@ function install_nrf() {
         # Use the separate JLink installation function
         _oh_my_sdk_install_jlink
         
+        # Install nrfutil
+        _oh_my_sdk_print_status "info" "Installing nrfutil..."
+        local nrfutil_bin_dir="${OH_MY_SDK_DIST}/nrfutil-bin"
+        local nrfutil_dir="${OH_MY_SDK_DIST}/nrfutil"
+        
+        # Create directories
+        mkdir -p "${nrfutil_bin_dir}"
+        mkdir -p "${nrfutil_dir}"
+        
+        # Download and make executable
+        curl -s "https://files.nordicsemi.com/ui/api/v1/download?repoKey=swtools&path=external/nrfutil/executables/x86_64-unknown-linux-gnu/nrfutil&isNativeBrowsing=false" > "${nrfutil_bin_dir}/nrfutil"
+        chmod +x "${nrfutil_bin_dir}/nrfutil"
+        
+        # Create symlink for .nrfutil directory
+        if [[ -d "${HOME}/.nrfutil" ]]; then
+            _oh_my_sdk_print_status "warning" "~/.nrfutil directory already exists, backing up..."
+            mv "${HOME}/.nrfutil" "${HOME}/.nrfutil.bak"
+        fi
+        ln -s "${nrfutil_dir}" "${HOME}/.nrfutil"
+        
+        # Install nrf5sdk-tools
+        _oh_my_sdk_print_status "info" "Installing nrf5sdk-tools..."
+        "${nrfutil_bin_dir}/nrfutil" install nrf5sdk-tools
+        
+        # Install device commands
+        _oh_my_sdk_print_status "info" "Installing device command..."
+        "${nrfutil_bin_dir}/nrfutil" install device
+        
+        # Install toolchain-manager
+        _oh_my_sdk_print_status "info" "Installing toolchain-manager..."
+        "${nrfutil_bin_dir}/nrfutil" install toolchain-manager
+        
         deactivate
         _oh_my_sdk_print_status "success" "NRF Connect SDK installation complete!"
         echo
