@@ -27,14 +27,24 @@ function install_nrf() {
         # Install nrfutil and its dependencies in the virtual environment
         _oh_my_sdk_print_status "info" "Installing nrfutil and its dependencies..."
         pip install --upgrade pip
-        pip install nrfutil==5.2.0  # Using a stable version
+        
+        # Install requirements from NRF SDK
+        _oh_my_sdk_print_status "info" "Installing NRF SDK requirements..."
+        pip install -r "${nrf_dir}/nrf/scripts/requirements.txt"
+        
+        # Install requirements from Zephyr
+        _oh_my_sdk_print_status "info" "Installing Zephyr requirements..."
+        pip install -r "${nrf_dir}/zephyr/scripts/requirements.txt"
+        
+        # Old way of installing nrfutil and dependencies
+        # pip install nrfutil==5.2.0  # Using a stable version
         
         # Install essential nrfutil commands
-        _oh_my_sdk_print_status "info" "Installing nrfutil tools..."
-        pip install nrfutil[device]
-        pip install nrfutil[dfu]
-        pip install nrfutil[dfu-serial]
-        pip install nrfutil[dfu-usb-serial]
+        # _oh_my_sdk_print_status "info" "Installing nrfutil tools..."
+        # pip install nrfutil[device]
+        # pip install nrfutil[dfu]
+        # pip install nrfutil[dfu-serial]
+        # pip install nrfutil[dfu-usb-serial]
         
         # Download and install NRF Connect SDK
         _oh_my_sdk_print_status "info" "Downloading and installing NRF Connect SDK..."
