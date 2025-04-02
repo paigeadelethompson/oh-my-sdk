@@ -5,7 +5,7 @@ A Zsh plugin for managing SDK installations and environments.
 ## Quick Install
 
 ```bash
-curl -s https://raw.githubusercontent.com/yourusername/oh-my-sdk/master/ayy.sh | bash && zsh
+curl -s https://raw.githubusercontent.com/paigeadelethompson/oh-my-sdk/master/install/ayy.sh | bash && zsh
 ```
 
 ## Manual Installation
@@ -52,7 +52,7 @@ zsh
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/oh-my-sdk.git
+git clone https://github.com/paigeadelethompson/oh-my-sdk.git
 ```
 
 2. The plugin will be automatically loaded by antigen.
@@ -68,77 +68,27 @@ omsdk install nrf
 
 Activate NRF environment:
 ```bash
-➜  ~ omsdk activate nrf                                                      
-ℹ  OH_MY_SDK_DIST value: /home/netcraveos/.oh-my-sdk/dist
-ℹ  Looking for NRF directory at: /home/netcraveos/.oh-my-sdk/dist/nrf
-ℹ  Looking for Command Line Tools at: /home/netcraveos/.oh-my-sdk/dist/nrf-command-line-tools
-ℹ  Activating Python virtual environment...
-ℹ  Looking for virtual environment at: /home/netcraveos/.oh-my-sdk/pyenv/nrf
-ℹ  Exporting Zephyr CMake package...
-Zephyr (/home/netcraveos/.oh-my-sdk/dist/nrf/zephyr/share/zephyr-package/cmake)
-has been added to the user package registry in:
-~/.cmake/packages/Zephyr
-
-ZephyrUnittest (/home/netcraveos/.oh-my-sdk/dist/nrf/zephyr/share/zephyrunittest-package/cmake)
-has been added to the user package registry in:
-~/.cmake/packages/ZephyrUnittest
-
-✅ NRF Connect environment activated!
-
-ℹ  Available commands:
-  • west help                  Show west command help
-  • nrfutil help              Show nrfutil command help
-  • omsdk deactivate          Deactivate environment
-(nrf) ➜  nrf omsdk status      
-ℹ  Current environment: nrf
-ℹ  NRF Connect SDK location: /home/netcraveos/.oh-my-sdk/dist/nrf
-ℹ  Current directory: /home/netcraveos/.oh-my-sdk/dist/nrf
-
-ℹ  Checking SDK components...
-✅ ✓ nrf directory present
-✅ ✓ bootloader directory present
-✅ ✓ board definitions present
-
-ℹ  Checking Nordic Command Line Tools...
-✅ ✓ Command Line Tools directory present
-
-ℹ  Checking binary tools...
-✅ ✓ nrfjprog installed
-✅ ✓ mergehex installed
-✅ ✓ jlinkarm worker installed
-
-ℹ  Checking libraries...
-✅ ✓ nrfjprog library installed
-✅ ✓ highlevel nrfjprog library installed
-✅ ✓ DFU library installed
-
-ℹ  Checking Python components...
-✅ ✓ pynrfjprog installed
-
-ℹ  Checking Python environment...
-✅ ✓ west installed
-✅ ✓ nrfutil installed
-
-ℹ  Checking PATH...
-✅ ✓ Command Line Tools in PATH
-
-ℹ  Checking library paths...
-✅ ✓ Libraries in LD_LIBRARY_PATH
-
-ℹ  Checking environment variables...
-✅ ✓ ZEPHYR_BASE set
-✅ ✓ ZEPHYR_TOOLCHAIN_VARIANT set
-(nrf) ➜  nrf 
+omsdk activate nrf
 ```
 
-Activate Zephyr environment:
+Create a new NRF project:
 ```bash
-activate_zephyr
+omsdk create nrf my_project
 ```
 
-Create a new Zephyr project:
+Check environment status:
 ```bash
-create_zephyr_project my_project
+omsdk status
+```
+
+Deactivate current environment:
+```bash
+omsdk deactivate
+```
+
+Show NRF-specific help:
+```bash
+omsdk help nrf
 ```
 
 ## Features
@@ -150,6 +100,7 @@ create_zephyr_project my_project
 - Auto-detection of project type
 - Python virtual environment management
 - System dependency checking and installation
+- Working directory preservation
 
 ## Contributing
 

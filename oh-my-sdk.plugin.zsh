@@ -4,6 +4,9 @@
 # Author: Your Name
 # License: MIT
 
+# Save current working directory
+local OLD_PWD="$PWD"
+
 # Base directory for SDK installations
 typeset -g OH_MY_SDK_BASE="${HOME}/.oh-my-sdk"
 typeset -g OH_MY_SDK_DIST="${HOME}/.oh-my-sdk/dist"
@@ -24,32 +27,39 @@ _oh_my_sdk_init
 
 # Source all individual function files
 SCRIPT_DIR="${0:A:h}"
+cd "${SCRIPT_DIR}"
 for funcfile in "${SCRIPT_DIR}"/nrf/_oh_my_sdk_*.zsh; do
     if [[ -f "${funcfile}" ]]; then
         source "${funcfile}"
     fi
 done
+cd "$OLD_PWD"
 
-# Auto-detect and activate environment based on current directory
+# Flag to prevent recursive auto-activation
+typeset -g _OH_MY_SDK_AUTO_ACTIVATING=0
+
+# Function to auto-activate based on current directory
 function _oh_my_sdk_auto_activate() {
-    local current_dir="$PWD"
-    
-    # If we're already in a virtual environment, check if it matches the project type
-    if [[ -n "${VIRTUAL_ENV}" ]]; then
-        local venv_name=$(basename "${VIRTUAL_ENV}")
-        if [[ "${venv_name}" == "nrf" ]] && _oh_my_sdk_is_nrf_project "${current_dir}"; then
-            return 0  # Already in correct environment
-        fi
+    # Skip if we're already auto-activating
+    if [[ $_OH_MY_SDK_AUTO_ACTIVATING -eq 1 ]]; then
+        return
     fi
     
-    # If we're not in a virtual environment or in the wrong one, activate the correct one
-    if _oh_my_sdk_is_nrf_project "${current_dir}"; then
-        if _oh_my_sdk_nrf_installed; then
-            activate_nrf
-        else
-            echo "NRF Connect SDK not installed. Run 'omsdk install nrf' to install."
-        fi
+    # Set flag to prevent recursion
+    _OH_MY_SDK_AUTO_ACTIVATING=1
+    
+    # Save current working directory
+    local CURRENT_PWD="$PWD"
+    
+    if _oh_my_sdk_is_nrf_project; then
+        activate_nrf
     fi
+    
+    # Restore working directory
+    cd "$CURRENT_PWD"
+    
+    # Reset flag
+    _OH_MY_SDK_AUTO_ACTIVATING=0
 }
 
 # Add auto-activation to chpwd hook
@@ -153,6 +163,9 @@ function zap_oh_my_sdk() {
 
 # Main omsdk command function
 omsdk() {
+    # Save current working directory
+    local CURRENT_PWD="$PWD"
+    
     case "$1" in
         ("help") case "$2" in
                 ("nrf") nrf_help ;;
@@ -189,4 +202,7 @@ omsdk() {
         (*) echo "Usage: omsdk [help|install|activate|create|status|deactivate|zap]"
                 return 1 ;;
     esac
+    
+    # Restore working directory
+    cd "$CURRENT_PWD"
 } 
