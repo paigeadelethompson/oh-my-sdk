@@ -61,6 +61,10 @@ function activate_nrf() {
     PATH="${HOME}/.nrfutil/bin:${PATH}"
     export PATH
     
+    # Add JLink to PATH
+    PATH="/opt/SEGGER/JLink:${PATH}"
+    export PATH
+    
     # Add library path
     LD_LIBRARY_PATH="${nrf_cli_dir}/lib:${LD_LIBRARY_PATH}"
     export LD_LIBRARY_PATH
