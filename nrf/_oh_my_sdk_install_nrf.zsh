@@ -18,16 +18,20 @@ function install_nrf() {
         _oh_my_sdk_print_status "info" "Creating NRF Connect workspace..."
         mkdir -p "${nrf_dir}"
         cd "${nrf_dir}"
-        
+
         # Create and activate virtual environment
         _oh_my_sdk_print_status "info" "Setting up Python virtual environment..."
         _oh_my_sdk_create_venv "nrf"
         _oh_my_sdk_activate_venv "nrf"
-        
-        # Install nrfutil and its dependencies in the virtual environment
-        _oh_my_sdk_print_status "info" "Installing nrfutil and its dependencies..."
-        pip install --upgrade pip
-        
+
+        # Install west
+        pip install west
+
+        # Download and install NRF Connect SDK
+        _oh_my_sdk_print_status "info" "Downloading and installing NRF Connect SDK..."
+        west init -m https://github.com/nrfconnect/sdk-nrf --mr main .
+        west update
+          
         # Install requirements from NRF SDK
         _oh_my_sdk_print_status "info" "Installing NRF SDK requirements..."
         pip install -r "${nrf_dir}/nrf/scripts/requirements.txt"
@@ -35,22 +39,7 @@ function install_nrf() {
         # Install requirements from Zephyr
         _oh_my_sdk_print_status "info" "Installing Zephyr requirements..."
         pip install -r "${nrf_dir}/zephyr/scripts/requirements.txt"
-        
-        # Old way of installing nrfutil and dependencies
-        # pip install nrfutil==5.2.0  # Using a stable version
-        
-        # Install essential nrfutil commands
-        # _oh_my_sdk_print_status "info" "Installing nrfutil tools..."
-        # pip install nrfutil[device]
-        # pip install nrfutil[dfu]
-        # pip install nrfutil[dfu-serial]
-        # pip install nrfutil[dfu-usb-serial]
-        
-        # Download and install NRF Connect SDK
-        _oh_my_sdk_print_status "info" "Downloading and installing NRF Connect SDK..."
-        west init -m https://github.com/nrfconnect/sdk-nrf --mr main .
-        west update
-        
+
         # Export Zephyr CMake package
         _oh_my_sdk_print_status "info" "Exporting Zephyr CMake package..."
         if ! west zephyr-export; then
