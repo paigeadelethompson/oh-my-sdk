@@ -68,6 +68,10 @@ function activate_nrf() {
     # Mark environment as activated
     export OMSDK_NRF_ACTIVATED=1
     
+    # Add west completion
+    _oh_my_sdk_print_status "info" "Adding west completion..."
+    eval "$(west completion zsh)"
+    
     _oh_my_sdk_print_status "success" "NRF Connect environment activated!"
     echo
     _oh_my_sdk_print_status "info" "Available commands:"
